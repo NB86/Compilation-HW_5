@@ -1,0 +1,120 @@
+#!/bin/bash 
+# change these per each homework 
+#	link to tests:
+testsurl="https://github.com/Hila-Levi/HW5_tests"
+makefileurl="https://github.com/Hila-Levi/HW5_makefile"
+
+hostname="cscomp"
+tmpdir="selfcheck_tmp"
+if [ $( hostname ) != "$hostname" ]
+	then 
+	echo "This script is only intended to run on "$hostname" or "$hostname2"!" 
+	exit 
+fi 
+
+if [ -z "$1" ]
+	then 
+	echo "Usage: $0 submission_file"
+	exit 
+fi
+
+if [ ! -f "$1" ] 
+	then
+	echo "Submission zip file not found!" 
+	exit 
+fi 
+
+rm -rf "$tmpdir" &> /dev/null 
+
+if [ -d "$tmpdir" ] 
+	then 
+	echo "Cannot clear tmp directory. Please delete '"$tmpdir"' manually and try again" 
+	exit 
+fi 
+
+mkdir "$tmpdir" &> /dev/null 
+unzip "$1" -d "$tmpdir" &> /dev/null 
+
+if [[ $? != 0 ]] 
+	then 
+	echo "Unable to unzip submission file!" 
+	exit
+fi
+
+cd "$tmpdir"
+
+if [ ! -f scanner.lex ] 
+	then
+	echo "File scanner.lex not found!"
+	exit
+fi
+
+if [ ! -f parser.y ] 
+	then
+	echo "File parser.ypp not found!"
+	exit
+fi
+
+if [ ! -f output.cpp ] 
+	then
+	echo "File output.cpp not found!"
+	exit
+fi
+
+if [ ! -f output.hpp ] 
+	then
+	echo "File output.hpp not found!"
+	exit
+fi
+
+git clone "$makefileurl" &> /dev/null
+if [ ! -d HW5_makefile ]
+	then
+		echo "Unable to download makefile!"
+		exit
+fi
+cd HW5_makefile
+mv * ../
+cd ..
+
+make -f makefile
+
+if [ ! -f hw5 ] 
+	then 
+	echo "Cannot build submission!" 
+	exit 
+fi 
+
+git clone "$testsurl" &> /dev/null
+if [ ! -d HW5_tests ]
+	then
+		echo "Unable to download tests!"
+		exit
+fi
+cd HW5_tests
+mv * ../
+cd ..
+
+#	number of tests: 
+numtests=3
+#	command to execute test: 
+command="./hw5 < t\$i.in 2>&1 t\$i.ll"
+i="1" 
+
+while [ $i -le $numtests ] 
+	do 
+		./hw5 < t$i.in 2>&1 > t$i.ll
+		lli t$i.ll > t$i.res
+		diff t$i.res t$i.out &> /dev/null 
+		if [[ $? != 0 ]] 
+			then
+			echo "Failed test #"$i"!" 
+			exit 
+		fi 
+		i=$[$i+1] 
+done 
+
+cd - &> /dev/null
+rm -rf "$tmpdir"
+echo "Ok to submit :)"
+exit

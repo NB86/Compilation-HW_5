@@ -1,0 +1,5 @@
+void main() {
+    int y = 5;
+	int z = 5;
+	int b = 2 / (y - z);
+}
