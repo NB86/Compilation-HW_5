@@ -1,0 +1,5 @@
+void main() {
+            printi(2 + 3 * 4);
+            printi((2 + 3) * 4);
+            printi(10 - 2 * 3); 
+        }

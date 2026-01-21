@@ -1,0 +1,6 @@
+void main() {
+            printi(10 + 20);
+            printi(10 - 3);
+            printi(5 * 5);
+            printi(100 / 2);
+        }

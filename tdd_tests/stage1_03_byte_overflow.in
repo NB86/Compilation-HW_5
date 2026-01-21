@@ -1,0 +1,4 @@
+void main() {
+            printi(255b + 1b);
+            printi(100b + 200b); 
+        }

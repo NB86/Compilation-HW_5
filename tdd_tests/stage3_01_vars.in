@@ -1,0 +1,7 @@
+void main() {
+            int x = 10;
+            int y = 20;
+            printi(x);
+            printi(y);
+            printi(x + y);
+        }

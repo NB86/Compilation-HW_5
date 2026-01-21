@@ -1,0 +1,5 @@
+void main() {
+            if (true and true) print("T and T");
+            if (true or false) print("T or F");
+            if (not false) print("not F");
+        }

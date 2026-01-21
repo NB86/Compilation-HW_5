@@ -4,7 +4,7 @@
 namespace output {
     /* Helper functions */
 
-    static std::string toString(ast::BuiltInType type) {
+    std::string toString(ast::BuiltInType type) {
         switch (type) {
             case ast::BuiltInType::INT:
                 return "int";

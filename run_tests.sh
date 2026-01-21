@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 EXEC_NAME="./hw5"
 
 # Directories
-TEST_DIRS=("./segel_tests/")
+TEST_DIRS=("./segel_tests/" "./tdd_tests/")
 OUTPUT_DIR="./tests_results/"
 
 # Check for verbose flag
@@ -58,11 +58,17 @@ for TESTS_DIR in "${TEST_DIRS[@]}"; do
         test_name="${filename%.*}"
         
         expected_output="${TESTS_DIR}${test_name}.out"
-        actual_output="${OUTPUT_DIR}${test_name}.res"
+        llvm_output="${OUTPUT_DIR}${test_name}.ll"  # Intermediate LLVM file
+        actual_output="${OUTPUT_DIR}${test_name}.res" # Final result after lli
 
-        # Run the test
-        # redirecting stderr to stdout (2>&1) as per instructions
-        $EXEC_NAME < "$test_file" > "$actual_output" 2>&1
+        # --- STEP 1: Generate LLVM IR ---
+        # Run your compiler. Output goes to .ll file. Stderr is redirected to stdout.
+        $EXEC_NAME < "$test_file" > "$llvm_output" 2>&1
+
+        # --- STEP 2: Run LLI ---
+        # Try to run lli on the generated file.
+        # We suppress lli's stderr to keep the console clean (in case of syntax errors in the .ll file)
+        lli "$llvm_output" > "$actual_output" 2> /dev/null
 
         # Compare output
         diff_output=$(diff "$expected_output" "$actual_output")

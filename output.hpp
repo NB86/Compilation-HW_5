@@ -8,8 +8,11 @@
 #include "nodes.hpp"
 
 namespace output {
-    /* Error handling functions */
 
+    std::string toString(ast::BuiltInType type);
+
+    /* Error handling functions */
+    
     void errorLex(int lineno);
 
     void errorSyn(int lineno);
