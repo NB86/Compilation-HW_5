@@ -14,8 +14,7 @@ def create_tests():
     tests = []
 
     # ==========================================
-    # Phase 1: Arithmetic Expressions (ביטויים חשבוניים)
-    # [cite: 137] "התחילו מחישובים פשוטים והתקדמו למורכבים"
+    # Phase 1: Arithmetic Expressions
     # ==========================================
     
     # 1.1 Basic Operations
@@ -30,7 +29,7 @@ def create_tests():
         "30\n7\n25\n50"
     ))
 
-    # 1.2 Precedence (Sdiv/Mul before Add/Sub)
+    # 1.2 Precedence
     tests.append(TestCase(
         "stage1_02_precedence",
         """void main() {
@@ -41,7 +40,7 @@ def create_tests():
         "14\n20\n4"
     ))
 
-    # 1.3 Byte Truncation (Handling overflow 0-255) [cite: 85]
+    # 1.3 Byte Truncation
     tests.append(TestCase(
         "stage1_03_byte_overflow",
         """void main() {
@@ -51,7 +50,7 @@ def create_tests():
         "0\n44"
     ))
 
-    # 1.4 Division by Zero (Runtime Check) [cite: 77]
+    # 1.4 Division by Zero
     tests.append(TestCase(
         "stage1_04_div_zero",
         """void main() {
@@ -61,9 +60,7 @@ def create_tests():
     ))
 
     # ==========================================
-    # Phase 2: Boolean Expressions (ביטויים בוליאניים)
-    # [cite: 138] "חישובים לביטויים בוליאניים מורכבים"
-    # הערה: מכיוון שאי אפשר להדפיס bool, נשתמש ב-if בסיסי כדי לבדוק נכונות
+    # Phase 2: Boolean Expressions
     # ==========================================
 
     # 2.1 Basic Relational Operators
@@ -78,7 +75,7 @@ def create_tests():
         "5 > 3\n2 < 4\n5 == 5\n5 != 3"
     ))
 
-    # 2.2 Logical Operators (AND/OR/NOT)
+    # 2.2 Logical Operators
     tests.append(TestCase(
         "stage2_02_logical",
         """void main() {
@@ -89,10 +86,7 @@ def create_tests():
         "T and T\nT or F\nnot F"
     ))
 
-    # 2.3 Short Circuit Evaluation [cite: 87]
-    # כדי לבדוק את זה, צריך לוודא שחלק מהביטוי לא מחושב. 
-    # זה דורש פונקציות שמדפיסות (נסמך על שלב מתקדם), או בדיקת קוד ה-LLVM ידנית.
-    # נשאיר בדיקה לוגית פשוטה:
+    # 2.3 Short Circuit Logic check
     tests.append(TestCase(
         "stage2_03_complex_bool",
         """void main() {
@@ -103,8 +97,7 @@ def create_tests():
     ))
 
     # ==========================================
-    # Phase 3: Local Variables (משתנים במחסנית)
-    # [cite: 58-59] "אחסון על מחסנית, alloca"
+    # Phase 3: Local Variables
     # ==========================================
 
     # 3.1 Basic Declaration and Usage
@@ -131,23 +124,24 @@ def create_tests():
         "10"
     ))
 
-    # 3.3 Scoping (Block scope)
+    # 3.3 Scoping (UPDATED: No Shadowing Allowed)
+    # בודק שאפשר לגשת למשתנה חיצוני, ושמשתנה פנימי הוא ייחודי אך בעל שם שונה
     tests.append(TestCase(
         "stage3_03_scope",
         """void main() {
             int x = 1;
             {
-                int x = 2;
-                printi(x);
+                int y = 2; 
+                printi(x); // Access outer variable (Allowed)
+                printi(y); // Access inner variable
             }
-            printi(x);
+            printi(x); // Outer variable remains
         }""",
-        "2\n1"
+        "1\n2\n1"
     ))
 
     # ==========================================
-    # Phase 4 & 5: Statements & Control Structures
-    # [cite: 139] "מבני בקרה (if, while)"
+    # Phase 5: Control Structures
     # ==========================================
 
     # 5.1 If-Else
@@ -177,7 +171,7 @@ def create_tests():
         "0\n1\n2"
     ))
 
-    # 5.3 Break/Continue [cite: 112, 115]
+    # 5.3 Break/Continue
     tests.append(TestCase(
         "stage5_03_break_continue",
         """void main() {
@@ -193,8 +187,7 @@ def create_tests():
     ))
 
     # ==========================================
-    # Phase 7: Functions (פונקציות)
-    # [cite: 140] "קריאה לפונקציות"
+    # Phase 7: Functions
     # ==========================================
 
     # 7.1 Simple Function Call
@@ -244,12 +237,10 @@ def write_tests(tests):
         out_path = os.path.join(OUTPUT_DIR, f"{test.name}.out")
         with open(out_path, "w", newline='\n') as f:
             f.write(test.expected_output)
-            # Add implicit newline if not empty, similar to how diff expects
             if test.expected_output:
                 f.write("\n")
     
     print(f"Successfully generated {len(tests)} tests.")
-    print("Don't forget to update your 'run_tests.sh' to point to this directory!")
 
 if __name__ == "__main__":
     tests = create_tests()

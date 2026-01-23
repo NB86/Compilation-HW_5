@@ -1,8 +1,9 @@
 void main() {
             int x = 1;
             {
-                int x = 2;
-                printi(x);
+                int y = 2; 
+                printi(x); // Access outer variable (Allowed)
+                printi(y); // Access inner variable
             }
-            printi(x);
+            printi(x); // Outer variable remains
         }
