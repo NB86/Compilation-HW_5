@@ -2,10 +2,6 @@
 #include <vector>
 #include <sstream>
 
-// ============================================================================
-// Helper Functions & Constructor
-// ============================================================================
-
 CodeGenerator::CodeGenerator(output::CodeBuffer& buffer) 
     : buffer(buffer), current_reg(""), current_type(ast::BuiltInType::VOID) {
     // Initialize with a global scope
@@ -38,23 +34,22 @@ CodeGenerator::SymbolInfo* CodeGenerator::getVar(const std::string& name) {
     return nullptr;
 }
 
-/**
- * @brief Converts AST built-in types to their LLVM IR string representation.
- */
+
+//Converts AST built-in types to their LLVM IR string representation.
 static std::string toLLVMType(ast::BuiltInType type) {
     switch (type) {
         case ast::BuiltInType::INT: return "i32";
-        case ast::BuiltInType::BYTE: return "i32"; // Bytes are promoted to i32 in arithmetic
-        case ast::BuiltInType::BOOL: return "i32"; // Booleans are stored as i32 (0 or 1)
+        // Bytes are promoted to i32
+        case ast::BuiltInType::BYTE: return "i32"; 
+        // Booleans are stored as i32 (0 or 1) in args/return
+        case ast::BuiltInType::BOOL: return "i32"; 
         case ast::BuiltInType::VOID: return "void";
         case ast::BuiltInType::STRING: return "i8*";
         default: return "i32";
     }
 }
 
-/**
- * @brief Emits LLVM IR for checking division by zero at runtime.
- */
+//Emits LLVM IR for checking division by zero at runtime.
 static void checkDivisionByZero(output::CodeBuffer& buffer, const std::string& divisor_reg) {
     std::string is_zero = buffer.freshVar();
     buffer.emit(is_zero + " = icmp eq i32 " + divisor_reg + ", 0");
@@ -64,7 +59,7 @@ static void checkDivisionByZero(output::CodeBuffer& buffer, const std::string& d
 
     buffer.emit("br i1 " + is_zero + ", label " + label_error + ", label " + label_continue);
 
-    // Error handling block
+    // Error handling
     buffer.emitLabel(label_error);
     buffer.emit("call void @print(i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str_div_err, i32 0, i32 0))");
     buffer.emit("call void @exit(i32 0)");
@@ -73,9 +68,8 @@ static void checkDivisionByZero(output::CodeBuffer& buffer, const std::string& d
     buffer.emitLabel(label_continue);
 }
 
-// ============================================================================
-// Visitor Implementations
-// ============================================================================
+
+// ***VISITOR IMPLEMENTATIONS***
 
 void CodeGenerator::visit(ast::Funcs &node) {
     global_strings.clear();
@@ -101,12 +95,12 @@ void CodeGenerator::visit(ast::Funcs &node) {
     buffer.emit("    ret void");
     buffer.emit("}");
 
-    // First Pass: Register all function signatures to support forward references
+    //Register all function signatures to support forward references
     for (auto& func : node.funcs) {
         functions_table[func->id->value] = func->return_type->type;
     }
 
-    // Second Pass: Generate code for function bodies
+    //Generate code for function bodies
     for (auto& func : node.funcs) {
         func->accept(*this);
     }
@@ -147,7 +141,7 @@ void CodeGenerator::visit(ast::FuncDecl &node) {
     node.body->accept(*this);
     endScope();
 
-    // Ensure valid control flow with a fallback return
+    // Fallback return to ensure valid control flow
     std::string fallback_label = buffer.freshLabel();
     buffer.emit("br label " + fallback_label);
     buffer.emitLabel(fallback_label);
@@ -164,7 +158,7 @@ void CodeGenerator::visit(ast::FuncDecl &node) {
 void CodeGenerator::visit(ast::Call &node) {
     std::string func_name = node.func_id->value;
     
-    // Handle built-in 'print' function (expects string)
+    // Built-in print function
     if (func_name == "print") {
         if (!node.args->exps.empty()) {
             node.args->exps[0]->accept(*this);
@@ -173,7 +167,7 @@ void CodeGenerator::visit(ast::Call &node) {
         return;
     } 
     
-    // Handle built-in 'printi' function (expects integer/boolean)
+    // Built-in printi function
     if (func_name == "printi") {
         if (!node.args->exps.empty()) {
             node.args->exps[0]->accept(*this);
@@ -187,13 +181,12 @@ void CodeGenerator::visit(ast::Call &node) {
         return;
     }
 
-    // Handle user-defined functions
+    // User-defined functions
     std::stringstream args_str;
     if (node.args) {
         for (size_t i = 0; i < node.args->exps.size(); ++i) {
             node.args->exps[i]->accept(*this);
             
-            // Promote booleans to i32 before passing
             std::string arg_val = current_reg;
             if (current_type == ast::BuiltInType::BOOL) {
                 std::string zext_reg = buffer.freshVar();
@@ -208,11 +201,16 @@ void CodeGenerator::visit(ast::Call &node) {
         }
     }
     
-    // Check if the function returns void based on the function table
+    // Determine the return type logic
     bool is_void = false;
+    bool is_bool = false; 
+
     if (functions_table.find(func_name) != functions_table.end()) {
-        if (functions_table[func_name] == ast::BuiltInType::VOID) {
+        ast::BuiltInType ret_type = functions_table[func_name];
+        if (ret_type == ast::BuiltInType::VOID) {
             is_void = true;
+        } else if (ret_type == ast::BuiltInType::BOOL) {
+            is_bool = true;
         }
     }
 
@@ -223,8 +221,16 @@ void CodeGenerator::visit(ast::Call &node) {
     } else {
         std::string res_reg = buffer.freshVar();
         buffer.emit(res_reg + " = call i32 @" + func_name + "(" + args_str.str() + ")");
-        current_reg = res_reg;
-        current_type = ast::BuiltInType::INT; 
+        
+        if (is_bool) {
+            std::string trunc_reg = buffer.freshVar();
+            buffer.emit(trunc_reg + " = trunc i32 " + res_reg + " to i1");
+            current_reg = trunc_reg;
+            current_type = ast::BuiltInType::BOOL;
+        } else {
+            current_reg = res_reg;
+            current_type = ast::BuiltInType::INT; 
+        }
     }
 }
 
@@ -241,8 +247,7 @@ void CodeGenerator::visit(ast::VarDecl &node) {
     if (node.init_exp) {
         node.init_exp->accept(*this);
         init_val = current_reg;
-        
-        // Zero-extend boolean values to i32 for storage
+
         if (current_type == ast::BuiltInType::BOOL) {
             std::string zext_reg = buffer.freshVar();
             buffer.emit(zext_reg + " = zext i1 " + current_reg + " to i32");
@@ -289,7 +294,6 @@ void CodeGenerator::visit(ast::ID &node) {
         
         current_type = info->type;
     } else {
-        // Fallback for undefined variables (should be caught by semantic analysis)
         current_reg = "0";
         current_type = ast::BuiltInType::INT;
     }
@@ -320,7 +324,6 @@ void CodeGenerator::visit(ast::While &node) {
 void CodeGenerator::visit(ast::Break &node) {
     if (!loops_stack.empty()) {
         buffer.emit("br label " + loops_stack.back().end_label);
-        // Emit unreachable label to maintain valid block structure
         std::string unreachable = buffer.freshLabel();
         buffer.emitLabel(unreachable);
     }
@@ -515,7 +518,6 @@ void CodeGenerator::visit(ast::Or &node) {
     current_type = ast::BuiltInType::BOOL;
 }
 
-// Unused visitors
 void CodeGenerator::visit(ast::Type &node) {}
 void CodeGenerator::visit(ast::Cast &node) {}
 void CodeGenerator::visit(ast::ExpList &node) {}

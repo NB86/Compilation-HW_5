@@ -8,20 +8,14 @@
 #include <vector>
 #include <unordered_map>
 
-/**
- * @class CodeGenerator
- * @brief Visitor implementation responsible for generating LLVM IR code from the AST.
- * * This class traverses the Abstract Syntax Tree (AST) and emits corresponding 
- * LLVM intermediate representation commands to the provided CodeBuffer.
- * It manages symbol tables for variables and functions, as well as control flow 
- * structures for loops.
- */
+    /* Visitor implementation responsible for generating LLVM IR code from the AST.
+   This class traverses the Abstract Syntax Tree (AST) and emits corresponding 
+   LLVM intermediate representation commands to the provided CodeBuffer.
+   It manages symbol tables for variables and functions, as well as control flow 
+   structures for loops.*/
+
 class CodeGenerator : public Visitor {
 public:
-    /**
-     * @brief Constructs a new CodeGenerator object.
-     * @param buffer Reference to the output buffer where LLVM IR commands will be written.
-     */
     explicit CodeGenerator(output::CodeBuffer& buffer);
 
     // Visitor implementations for AST nodes
@@ -60,13 +54,13 @@ private:
     // Tracks the type of the result of the last visited expression
     ast::BuiltInType current_type;
 
-    /**
-     * @struct SymbolInfo
-     * @brief Holds information about a local variable in the scope.
-     */
+    
+    //Holds information about a local variable in the scope.
     struct SymbolInfo {
-        std::string reg_ptr;     // LLVM register pointer to the variable's stack location
-        ast::BuiltInType type;   // The variable's type
+        // LLVM register pointer to the variable's stack location
+        std::string reg_ptr;     
+        // The variable's type
+        ast::BuiltInType type;   
     };
 
     // Symbol table supporting nested scopes.
@@ -76,22 +70,19 @@ private:
     // Maps function names to their return types to allow forward references.
     std::unordered_map<std::string, ast::BuiltInType> functions_table;
 
-    /**
-     * @struct LoopLabels
-     * @brief Stores labels for control flow within loops.
-     */
+    
+    //Stores labels for control flow within loops.
     struct LoopLabels {
-        std::string check_label; // Label for the condition check (used by 'continue')
-        std::string end_label;   // Label for the end of the loop (used by 'break')
+        // (used by 'continue')
+        std::string check_label;
+        // (used by 'break')
+        std::string end_label;   
     };
 
     // Stack of active loops to handle nested 'break' and 'continue' statements.
     std::vector<LoopLabels> loops_stack;
 
-    /**
-     * @struct GlobalString
-     * @brief Represents a string literal to be defined globally.
-     */
+    // Represents a string literal to be defined globally.    
     struct GlobalString {
         std::string value;
         std::string var_name;
@@ -99,7 +90,7 @@ private:
     };
     std::vector<GlobalString> global_strings;
 
-    // Helper methods for scope management
+    // Helper methods
     void beginScope();
     void endScope();
     void declareVar(const std::string& name, const std::string& reg_ptr, ast::BuiltInType type);
